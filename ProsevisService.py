@@ -55,12 +55,12 @@ import tempfile
 import os
 import sys
 import shutil
-from socket import gethostname
+import socket
 
 ###### Configuration ######
 
 # The name of this host (must be visible on the internet) - determined automatically, but in rare cases must be manually specified
-hostname = gethostname()
+hostname = socket.gethostname()
 
 # The port the service will listen on
 servicePort = 8888

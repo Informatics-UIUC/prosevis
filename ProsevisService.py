@@ -108,6 +108,15 @@ lock = Lock()
 info = logging.getLogger(__name__).info
 tmpDir = tempfile.gettempdir()
 
+def isOpen(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((ip, int(port)))
+        s.shutdown(2)
+        return True
+    except:
+        return False
+
 class ProsevisService(object):
     def success(self, payload):
         response = { 'status': { 'code': 0 }, 'data': payload }
@@ -290,6 +299,10 @@ if not os.path.exists(xsl_add_seasr_id) or \
    not os.path.exists(xsl_mary_to_csv):
    print >> sys.stderr, "One of the required XSL files could not be found. Cannot continue."
    sys.exit(-2)
+
+if not isOpen(openmary_hostname, openmary_port):
+    print >> sys.stderr, "OpenMary is not running. Please start OpenMary before starting the ProseVis service. Exiting..."
+    sys.exit(-3)
 
 # Start the service
 cherrypy.config.update({'server.socket_host': hostname, 'server.socket_port': servicePort, })

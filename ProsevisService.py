@@ -53,10 +53,14 @@ import logging
 import urllib
 import tempfile
 import os
+import sys
 import shutil
 from socket import gethostname
 
 ###### Configuration ######
+
+# The name of this host (must be visible on the internet) - determined automatically, but in rare cases must be manually specified
+hostname = gethostname()
 
 # The port the service will listen on
 servicePort = 8888
@@ -71,11 +75,34 @@ zzre = "zzre-1.4.12.jar"
 java = "java"
 
 # Options to pass to Java
-javaopts = "-Xmx7g"
+javaopts = "-Xmx4g"
+
+# OpenMary configuration
+openmary_hostname = "localhost"
+openmary_port = 59125
+
+# SMTP configuration
+smtp_server = "YOU MUST CHANGE THIS"
+email_from = "meandre@seasr.org"
+email_subject = "Job results for: %s"  # %s here refers to the job token
+
+# Result configuration
+www_documentroot = "/var/www/"  # needs to be a path (must end with /) for the WWW DocumentRoot; this is the path that the web server uses to serve documents from
+result_relative_location_regex = www_documentroot + "(.+)"  # this regex extracts the relative path of the result to the www documentroot; you should not need to change this
+result_path = www_documentroot + "seasr/prosevis/results/"  # this is where results will be written; make sure that the user under which the prosevis service will be running has permission to write to this folder
+
+# Email templates for the result email (BE CAREFUL WHEN MODIFYING! make sure you preserve the %s in the format, which is a placeholder for the errors or the result location)
+result_error_email_template = "Note: This is an automatically generated email - do not reply!\n\nUnfortunately your document did not process successfully. Please see below for the error encountered:\n\n%s\n\nSorry for any inconvenience."
+result_success_email_template = "Note: This is an automatically generated email - do not reply!\n\nYour document has been successfully processed. You can access your results at the following link:\nhttp://{}/%s\n\nThank you.\n".format(hostname)
+
+# XSL locations
+xsl_add_seasr_id = os.path.join("xsl", "add-seasr-id.xsl")
+xsl_lg_to_p = os.path.join("xsl", "lg-to-p.xsl")
+xsl_preprocess = os.path.join("xsl", "tei-to-document-idonly-concatlg.xsl")
+xsl_mary_to_csv = os.path.join("xsl", "mary-to-csv.xsl")
 
 ###### DO NOT MODIFY BELOW THIS LINE ######
 
-hostname = gethostname()
 lock = Lock()
 
 info = logging.getLogger(__name__).info
@@ -133,11 +160,28 @@ class ProsevisService(object):
         with lock:
             port = ports.pop(0)
 
-        global java, javaopts, zzre
-
-        cmd = '{} {} -jar {} '\
-              'Service_Process_TEI_XML_through_OpenMary.mau '\
-              '--port "{}" --param tei_url="{}" --param email_to="{}" --param token="{}"'.format(java, javaopts, zzre, port, doc, email, token)
+        cmd = '{} {} -jar {} ' \
+              'Service_Process_TEI_XML_through_OpenMary.mau ' \
+              '--port "{}" --param tei_url="{}" --param email_to="{}" --param token="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/push-text/1#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/push-text/6#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/push-text/13#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/push-text/19#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/openmary-client/31#server_hostname="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/openmary-client/31#server_port="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/text-format/3#format="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/text-format/2#format="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/send-email/8#smtp_server="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/push-text/3#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/text-format/7#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/write-to-archive/0#default_folder="{}" ' \
+              '--param meandre://seasr.org/services/service-process-tei-xml-through-openmary/instance/search-text/1#expression="{}" ' \
+              .format(java, javaopts, zzre, port, doc, email, token, 
+                xsl_add_seasr_id, xsl_lg_to_p, xsl_preprocess, xsl_mary_to_csv,
+                openmary_hostname, openmary_port,
+                result_error_email_template, result_success_email_template,
+                smtp_server, email_from, email_subject,
+                result_path, result_relative_location_regex)
 
         pool = Pool(max_workers=1)
         pool.submit(self.execute, cmd, port, folder)
@@ -185,11 +229,22 @@ class ProsevisService(object):
         with lock:
             port = ports.pop(0)
 
-        global java, javaopts, zzre
-
         cmd = '{} {} -jar {} ' \
               'Service_Process_ZIP_TEI_XML_through_OpenMary.mau ' \
               '--port "{}" --param zip_url="{}" --param email_to="{}" --param token="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/push-text/1#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/push-text/6#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/push-text/13#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/push-text/19#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/openmary-client/31#server_hostname="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/openmary-client/31#server_port="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/text-format/3#format="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/text-format/2#format="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/send-email/8#smtp_server="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/push-text/3#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/text-format/7#message="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/write-to-archive/0#default_folder="{}" ' \
+              '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/search-text/1#expression="{}" ' \
               '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/prosody-similarity/11#comparison_range="{}" ' \
               '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/prosody-similarity/11#max_phonemes_per_vol="{}" ' \
               '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/prosody-similarity/11#num_rounds="{}" ' \
@@ -204,6 +259,11 @@ class ProsevisService(object):
               '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/prosody-similarity/11#phonemeId_weight="{}" ' \
               '--param meandre://seasr.org/services/service-process-zip-tei-xml-through-openmary/instance/prosody-similarity/11#breakIndex_weight="{}" ' \
               .format(java, javaopts, zzre, port, doc, email, token, 
+                xsl_add_seasr_id, xsl_lg_to_p, xsl_preprocess, xsl_mary_to_csv,
+                openmary_hostname, openmary_port,
+                result_error_email_template, result_success_email_template,
+                smtp_server, email_from, email_subject,
+                result_path, result_relative_location_regex,
                 comparison_range, max_phonemes_per_vol, num_rounds, use_sampling,
                 weighting_power, phonemes_window_size,
                 pos_weight, accent_weight, stress_weight, tone_weight, phraseId_weight, phonemeId_weight, breakIndex_weight)
@@ -214,6 +274,23 @@ class ProsevisService(object):
 
         return self.success({ 'token': token, 'console': 'http://%s:%d' % (hostname, port) })
 
+# Sanity checks
 
-cherrypy.config.update({'server.socket_host': '0.0.0.0', 'server.socket_port': servicePort, })
+if not os.path.isdir(result_path):
+    print >> sys.stderr, "ProseVis result location folder does not exist - attempting to create"
+    os.makedirs(result_path)
+
+if not os.path.exists(zzre):
+    print >> sys.stderr, "Could not find required Meandre execution runtime file: " + zzre
+    sys.exit(-1)
+
+if not os.path.exists(xsl_add_seasr_id) or \
+   not os.path.exists(xsl_lg_to_p) or \
+   not os.path.exists(xsl_preprocess) or \
+   not os.path.exists(xsl_mary_to_csv):
+   print >> sys.stderr, "One of the required XSL files could not be found. Cannot continue."
+   sys.exit(-2)
+
+# Start the service
+cherrypy.config.update({'server.socket_host': hostname, 'server.socket_port': servicePort, })
 cherrypy.quickstart(ProsevisService())

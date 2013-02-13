@@ -286,22 +286,22 @@ class ProsevisService(object):
 # Sanity checks
 
 if not os.path.isdir(result_path):
-    print >> sys.stderr, "ProseVis result location folder does not exist - attempting to create"
+    print >> sys.stderr, "Warning: ProseVis result location folder does not exist - attempting to create"
     os.makedirs(result_path)
 
 if not os.path.exists(zzre):
-    print >> sys.stderr, "Could not find required Meandre execution runtime file: " + zzre
+    print >> sys.stderr, "Error: Could not find required Meandre execution runtime file: " + zzre
     sys.exit(-1)
 
 if not os.path.exists(xsl_add_seasr_id) or \
    not os.path.exists(xsl_lg_to_p) or \
    not os.path.exists(xsl_preprocess) or \
    not os.path.exists(xsl_mary_to_csv):
-   print >> sys.stderr, "One of the required XSL files could not be found. Cannot continue."
+   print >> sys.stderr, "Error: One or more of the required XSL files could not be found. Cannot continue."
    sys.exit(-2)
 
 if not isOpen(openmary_hostname, openmary_port):
-    print >> sys.stderr, "OpenMary is not running. Please start OpenMary before starting the ProseVis service. Exiting..."
+    print >> sys.stderr, "Error: OpenMary is not running. Please start OpenMary before starting the ProseVis service."
     sys.exit(-3)
 
 # Start the service

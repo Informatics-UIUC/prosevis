@@ -1,21 +1,3 @@
-CONFIGURING THE SERVICE
-
-Edit the Configuration section of ProsevisService.py to adjust the variables as needed.
-This is *required* for some variables.
-
-RUNNING THE SERVICE
-
-There are a number of ways that can be used to start the service. All the below are valid:
-> ./ProsevisService.py     (if you made it executable with: chmod +x ProsevisService.py)
-or
-> python ProsevisService.py
-
-If background execution is desired, then use:
-
-> python ProsevisService.py 1>prosevis.log 2>&1 &
-
-the above starts it in the background and records all it's output into the "prosevis.log" file in the same folder.
-
 PREREQUISITES
 
 OpenMary
@@ -32,6 +14,27 @@ Additionally, you need to install the following packages:
 	* concurrent.futures package
 		if you use Python 2.7.x, you need to download and install the back port from here: http://pypi.python.org/pypi/futures
 		if you use Python 3.x, the concurrent.futures package is built-in
+
+
+CONFIGURING THE SERVICE
+
+Edit the Configuration section of ProsevisService.py to adjust the variables as needed.
+This is *required* for some variables.
+
+
+RUNNING THE SERVICE
+
+There are a number of ways that can be used to start the service. All the below are valid:
+> ./ProsevisService.py     (if you made it executable with: chmod +x ProsevisService.py)
+or
+> python ProsevisService.py
+
+If background execution is desired, then use:
+
+> python ProsevisService.py 1>prosevis.log 2>&1 &
+
+the above starts it in the background and records all it's output into the "prosevis.log" file in the same folder.
+
 
 EXECUTION LOG
 
